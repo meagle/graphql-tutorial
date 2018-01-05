@@ -1,16 +1,10 @@
 import React from 'react';
-import {
-  Link
-} from 'react-router-dom'
-
-import {
-    gql,
-    graphql,
-} from 'react-apollo';
-
+import { graphql } from 'react-apollo';
+import gql from 'graphql-tag';
 import AddChannel from './AddChannel';
+import { Link } from 'react-router-dom';
 
-const ChannelsList = ({ data: {loading, error, channels }}) => {
+const ChannelsList = ({ data: { loading, error, channels } }) => {
   if (loading) {
     return <p>Loading ...</p>;
   }
@@ -21,13 +15,14 @@ const ChannelsList = ({ data: {loading, error, channels }}) => {
   return (
     <div className="channelsList">
       <AddChannel />
-      { channels.map( ch =>
-        (<div key={ch.id} className={'channel ' + (ch.id < 0 ? 'optimistic' : '')}>
-          <Link to={ch.id < 0 ? `/` : `channel/${ch.id}`}>
-            {ch.name}
-          </Link>
-        </div>)
-      )}
+      {channels.map(ch => (
+        <div
+          key={ch.id}
+          className={'channel ' + (ch.id < 0 ? 'optimistic' : '')}
+        >
+          <Link to={ch.id < 0 ? `/` : `channel/${ch.id}`}>{ch.name}</Link>
+        </div>
+      ))}
     </div>
   );
 };
@@ -42,5 +37,5 @@ export const channelsListQuery = gql`
 `;
 
 export default graphql(channelsListQuery, {
-  options: { pollInterval: 5000 },
+  options: { pollInterval: 500 }, // This only works when you don't have refetchQueries specified
 })(ChannelsList);

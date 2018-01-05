@@ -1,63 +1,8 @@
 import React from 'react';
-import { gql, graphql } from 'react-apollo';
+import { graphql } from 'react-apollo';
+import gql from 'graphql-tag';
 import { channelDetailsQuery } from './ChannelDetails';
-import { withRouter } from 'react-router';
-
-const AddMessage = ({ mutate, match }) => {
-  const handleKeyUp = (evt) => {
-    if (evt.keyCode === 13) {
-      mutate({
-        variables: {
-          message: {
-            channelId: match.params.channelId,
-            text: evt.target.value
-          }
-        },
-        optimisticResponse: {
-          addMessage: {
-            text: evt.target.value,
-            id: Math.round(Math.random() * -1000000),
-            __typename: 'Message',
-          },
-        },
-        update: (store, { data: { addMessage } }) => {
-          // Read the data from the cache for this query.
-          const data = store.readQuery({
-            query: channelDetailsQuery,
-            variables: {
-              channelId: match.params.channelId,
-            }
-          });
-
-          // don't double add the message
-          if (!data.channel.messages.find((msg) => msg.id === addMessage.id)) {
-            // Add our Message from the mutation to the end.
-            data.channel.messages.push(addMessage);
-          }
-          // Write the data back to the cache.
-          store.writeQuery({
-            query: channelDetailsQuery,
-            variables: {
-              channelId: match.params.channelId,
-            },
-            data
-          });
-        },
-      });
-      evt.target.value = '';
-    }
-  };
-
-  return (
-    <div className="messageInput">
-      <input
-        type="text"
-        placeholder="New message"
-        onKeyUp={handleKeyUp}
-      />
-    </div>
-  );
-};
+import { withRouter } from 'react-router-dom';
 
 const addMessageMutation = gql`
   mutation addMessage($message: MessageInput!) {
@@ -68,9 +13,59 @@ const addMessageMutation = gql`
   }
 `;
 
+const AddMessage = ({ mutate, match }) => {
+  const handleKeyUp = evt => {
+    if (evt.keyCode === 13) {
+      mutate({
+        variables: {
+          message: {
+            channelId: match.params.channelId,
+            text: evt.target.value,
+          },
+        },
+        optimisticResponse: {
+          addMessage: {
+            text: evt.target.value,
+            id: Math.round(Math.random() * -1000000),
+            __typename: 'Message',
+          },
+        },
+        update: (store, { data: { addMessage } }) => {
+          console.log('updating' + addMessage.id + ' ' + addMessage.text);
+          // Read the data from the cache for this query.
+          const data = store.readQuery({
+            query: channelDetailsQuery,
+            variables: {
+              channelId: match.params.channelId,
+            },
+          });
+          // Add our Message from the mutation to the end.
+          if (!data.channel.messages.find(msg => msg.id === addMessage.id)) {
+            // Add our Message from the mutation to the end.
+            data.channel.messages.push(addMessage);
+          }
+          // Write the data back to the cache.
+          store.writeQuery({
+            query: channelDetailsQuery,
+            variables: {
+              channelId: match.params.channelId,
+            },
+            data,
+          });
+        },
+      });
+      evt.target.value = '';
+    }
+  };
 
-const AddMessageWithMutation = graphql(
-  addMessageMutation,
-)(withRouter(AddMessage));
+  return (
+    <div className="messageInput">
+      <input type="text" placeholder="New message" onKeyUp={handleKeyUp} />
+    </div>
+  );
+};
 
+const AddMessageWithMutation = graphql(addMessageMutation)(
+  withRouter(AddMessage)
+);
 export default AddMessageWithMutation;
